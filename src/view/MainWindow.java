@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Insets;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 import java.io.File;
 
 import javax.swing.BorderFactory;
@@ -82,6 +83,20 @@ public class MainWindow extends JFrame {
 	public void addActionListenerToWindow(ActionListener listener) {
 		queryUIPanel.addActionListener(listener);
 		metaDataUIPanel.addActionListener(listener);
+	}
+	
+	/*
+	 * @ Responsible for displaying the query image on the display screen
+	 */
+	public void displayQueryImg(String name, BufferedImage img) {
+		queryUIPanel.displayImage(name, img);
+	}
+	
+	/*
+	 * @ Responsible for displaying the meta image on the display screen
+	 */
+	public void displayMetaImg(String name, BufferedImage img) {
+		metaDataUIPanel.displayImage(name, img);
 	}
 	
 	private JLabel statusText;

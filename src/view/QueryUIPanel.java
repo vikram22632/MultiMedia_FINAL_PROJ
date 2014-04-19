@@ -3,7 +3,6 @@ package view;
 import java.awt.Color;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
-import java.io.File;
 
 import javax.swing.BorderFactory;
 import javax.swing.ImageIcon;
@@ -57,7 +56,7 @@ class QueryUIPanel extends JPanel{
 		searchBtn.setBounds(startXPos, startYPos, IMG_WIDTH + 2, BTN_HEIGHT);
 		
 		PANEL_HEIGHT = startYPos + BTN_HEIGHT + 10;
-		System.out.println("Query Panel height = " + PANEL_HEIGHT);
+		//System.out.println("Query Panel height = " + PANEL_HEIGHT);
 		
 		/* Add the controls to the panel */
 		add(loadMediaBtn);
@@ -65,8 +64,6 @@ class QueryUIPanel extends JPanel{
 		add(mediaDispLbl);
 		add(searchProgressBar);
 		add(searchBtn);
-		
-		setVisible(true);
 	}
 	
 	/*
@@ -82,10 +79,10 @@ class QueryUIPanel extends JPanel{
 	/*
 	 * @ This function displays the image on the screen at the given place
 	 */
-	public void displayImage(String name, BufferedImage image) {
+	public void displayImage(String name, BufferedImage img) {
 		mediaNameLbl.setText(name);
-		mediaDispLbl.setIcon(new ImageIcon(image));
-	}
+		mediaDispLbl.setIcon(new ImageIcon(img));
+	}	
 	
 	/*
 	 * @ private data members

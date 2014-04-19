@@ -2,7 +2,10 @@ package controller;
 
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.File;
 
+import model.RGBImg;
+import model.RGBVid;
 import view.MainWindow;
 
 public class LogicController implements ActionListener, Runnable {
@@ -13,6 +16,7 @@ public class LogicController implements ActionListener, Runnable {
 	public LogicController(MainWindow window) {
 		/* Add this class as the action listener for the window */
 		window.addActionListenerToWindow(this);
+		this.display = window;
 	}
 
 	/*
@@ -32,10 +36,17 @@ public class LogicController implements ActionListener, Runnable {
 		if("Load Meta Image/Video".equals(event.getActionCommand())) {
 			/* TODO: Handle this */
 			System.out.println("Load Meta Image/Video");
+			File file = display.getFileChosenByUser();
 		}
 		else if("Load Query Image".equals(event.getActionCommand())) {
 			/* TODO: Handle this */
-			System.out.println("Load Query Image");
+			File file = display.getFileChosenByUser();
+			if(file != null) {
+				queryImg = new RGBImg(MEDIA_WIDTH, MEDIA_HEIGHT, file.getName());
+				queryImg.readStandaloneImg(file.getAbsolutePath());
+				
+				display.displayQueryImg(queryImg.getImageName(), queryImg.getdisplayImage());
+			}
 		}
 		else if("Start Search".equals(event.getActionCommand())) {
 			/* TODO: Handle this */
@@ -58,5 +69,13 @@ public class LogicController implements ActionListener, Runnable {
 			System.out.println("Go to next frame");
 		}
 	}
-
+	
+	/* members of the class */
+	private RGBImg		queryImg;
+	private RGBImg		metaImg;
+	private RGBVid		metaVideo;
+	private MainWindow	display;
+	
+	private static final int MEDIA_WIDTH = 352;
+	private static final int MEDIA_HEIGHT = 288;
 }
