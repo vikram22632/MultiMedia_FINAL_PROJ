@@ -31,14 +31,17 @@ public class RGBImg {
 	public void readStandaloneImg(String path) {
 		/* read the image file */
 		try {
+			InputStream is = new FileInputStream(new File(path));
 			/* Read the colour components */
-			readImgFrame(new FileInputStream(new File(path)));
+			readImgFrame(is);
+			is.close();
 			
 			String alphaFilePath = path.replace(".rgb", ".alpha");
 			File alphaFile = new File(alphaFilePath);
 			if(alphaFile.exists() && !alphaFile.isDirectory()) {
-				InputStream is = new FileInputStream(alphaFile);
-				readColorComponent(alpha, is);
+				is = new FileInputStream(alphaFile);
+				readAlphaComponent(alpha, is);
+				is.close();
 			}
 			else {
 				/* Simply assign opaque values for alpha bytes */
@@ -65,6 +68,7 @@ public class RGBImg {
 			readColorComponent(red, is);
 			readColorComponent(green, is);
 			readColorComponent(blue, is);
+			
 		} catch(IOException e) {
 			e.printStackTrace();
 		}
@@ -103,6 +107,49 @@ public class RGBImg {
 	}
 	
 	/*
+	 * @ Responsible for encircling (actually adding a rectangle) a portion of the image
+	 */
+	public void highlightImgPortion(int startX, int startY, int endX, int endY) {
+		int	iCnt	= 0;
+		int	iPos	= 0;
+		
+		/* TODO: Very Crude Logic Written here, needs to be looked into and improved */
+		/* --------- Print Rows --------- */
+		/* Top Row */
+		iPos = (width * startY) + startX;
+		for(iCnt = iPos; iCnt <= iPos + (endX - startX); iCnt++) {
+			blue[iCnt] = 0;
+			green[iCnt] = 0;
+			red[iCnt] = (byte)0xff;
+		}
+		
+		/* Bottom Row */
+		iPos = (width * endY) + startX;
+		for(iCnt = iPos; iCnt <= iPos + (endX - startX); iCnt++) {
+			blue[iCnt] = 0;
+			green[iCnt] = 0;
+			red[iCnt] = (byte)0xff;
+		}
+		
+		/* Left Column */
+		iPos = (width * startY) + startX;
+		for(iCnt = iPos; iCnt <= ((width * endY) + startX); iCnt += width) {
+			blue[iCnt] = 0;
+			green[iCnt] = 0;
+			red[iCnt] = (byte)0xff;
+		}
+		
+		/* Right Column */
+		iPos = (width * startY) + endX;
+		for(iCnt = iPos; iCnt <= ((width * endY) + endX); iCnt += width) {
+			blue[iCnt] = 0;
+			green[iCnt] = 0;
+			red[iCnt] = (byte)0xff;
+		}
+		
+	}
+	
+	/*
 	 * @ Responsible for reading the individual colour components from the input stream
 	 * provided as the input
 	 */
@@ -112,6 +159,21 @@ public class RGBImg {
 		
 		while((offset < comp.length) && ((numRead = is.read(comp, offset, comp.length - offset)) >= 0) ) {
 			offset += numRead;
+		}
+	}
+	
+	private void readAlphaComponent(byte[] alpha, InputStream is) throws IOException {
+		int			offset	= 0;
+		int			numRead	= 0;
+		
+		while((offset < alpha.length) && ((numRead = is.read(alpha, offset, alpha.length - offset)) >= 0) ) {
+			offset += numRead;
+		}
+		
+		for(int i =0; i < alpha.length; i++) {
+			if(alpha[i] == 1) {
+				alpha[i] = (byte) 0xff;
+			}
 		}
 	}
 

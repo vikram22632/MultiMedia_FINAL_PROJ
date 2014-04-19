@@ -52,6 +52,12 @@ class MetaDataUIPanel extends JPanel{
 		PANEL_HEIGHT = startYPos;
 		vidCtrlPanel = createVidCtrlPanel(startXPos, startYPos);
 		
+		/* Hide these controls for now */
+		playMediaBtn.setVisible(false);
+		prevFrameBtn.setVisible(false);
+		nextFrameBtn.setVisible(false);
+		videoProgressBar.setVisible(false);
+		
 		/* Add the controls to the panel */
 		add(loadMediaBtn);
 		add(mediaNameLbl);
@@ -83,6 +89,23 @@ class MetaDataUIPanel extends JPanel{
 		prevFrameBtn.setVisible(false);
 		nextFrameBtn.setVisible(false);
 		videoProgressBar.setVisible(false);
+	}
+	
+	public void displayVideoBegFrame(String name, BufferedImage frame, int totCnt) {
+		mediaNameLbl.setText(name);
+		mediaDispLbl.setIcon(new ImageIcon(frame));
+		
+		/* Hide the play/pause, fwd, rew buttons and the progress bar */
+		playMediaBtn.setVisible(true);
+		prevFrameBtn.setVisible(true);
+		nextFrameBtn.setVisible(true);
+		videoProgressBar.setVisible(true);
+		
+		/* TODO: Set the values for the progress bar */
+	}
+	
+	public void updateVideoFrames(BufferedImage frame, int curFrameCnt) {
+		/* TODO: Implement this */
 	}
 	
 	/*

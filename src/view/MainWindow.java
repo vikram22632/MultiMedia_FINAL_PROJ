@@ -99,6 +99,20 @@ public class MainWindow extends JFrame {
 		metaDataUIPanel.displayImage(name, img);
 	}
 	
+	/*
+	 * @ Responsible for displaying the meta video's first frame on the display screen
+	 */
+	public void displayMetaVideoFrame(String name, BufferedImage img, int cnt) {
+		metaDataUIPanel.displayVideoBegFrame(name, img, cnt);
+	}
+	
+	/*
+	 * @ Responsible for updating the frames of the meta video
+	 */
+	public void updateMetaVideoFrame(BufferedImage img, int cnt) {
+		metaDataUIPanel.updateVideoFrames(img, cnt);
+	}
+	
 	private JLabel statusText;
 	private QueryUIPanel queryUIPanel;
 	private MetaDataUIPanel metaDataUIPanel;
