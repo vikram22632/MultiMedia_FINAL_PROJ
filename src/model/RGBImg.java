@@ -110,43 +110,38 @@ public class RGBImg {
 	 * @ Responsible for encircling (actually adding a rectangle) a portion of the image
 	 */
 	public void highlightImgPortion(int startX, int startY, int endX, int endY) {
-		int	iCnt	= 0;
-		int	iPos	= 0;
+
+		int firstPos = (width * startY) + startX;
+		int secondPos = (width * endY) + startX;
+		int pixelCnt = endX - startX;
 		
-		/* TODO: Very Crude Logic Written here, needs to be looked into and improved */
-		/* --------- Print Rows --------- */
-		/* Top Row */
-		iPos = (width * startY) + startX;
-		for(iCnt = iPos; iCnt <= iPos + (endX - startX); iCnt++) {
-			blue[iCnt] = 0;
-			green[iCnt] = 0;
-			red[iCnt] = (byte)0xff;
+		/* Mark the rows */
+		for(int iCnt = 0; iCnt < pixelCnt; iCnt++) {
+			/* Pixels of the top row */
+			red[firstPos + iCnt] = (byte)0xff;
+			green[firstPos + iCnt] = 0;
+			blue[firstPos + iCnt] = 0;
+			
+			/* Pixels of the bottom row */
+			red[secondPos + iCnt] = (byte)0xff;
+			green[secondPos + iCnt] = 0;
+			blue[secondPos + iCnt] = 0;
 		}
 		
-		/* Bottom Row */
-		iPos = (width * endY) + startX;
-		for(iCnt = iPos; iCnt <= iPos + (endX - startX); iCnt++) {
-			blue[iCnt] = 0;
-			green[iCnt] = 0;
-			red[iCnt] = (byte)0xff;
-		}
-		
-		/* Left Column */
-		iPos = (width * startY) + startX;
-		for(iCnt = iPos; iCnt <= ((width * endY) + startX); iCnt += width) {
-			blue[iCnt] = 0;
-			green[iCnt] = 0;
-			red[iCnt] = (byte)0xff;
-		}
-		
-		/* Right Column */
-		iPos = (width * startY) + endX;
-		for(iCnt = iPos; iCnt <= ((width * endY) + endX); iCnt += width) {
-			blue[iCnt] = 0;
-			green[iCnt] = 0;
-			red[iCnt] = (byte)0xff;
-		}
-		
+		/* mark the columns */
+		secondPos = (width * startY) + endX;
+		pixelCnt = (endY - startY) * width;
+		for(int iCnt = 0; iCnt < pixelCnt; iCnt+= width) {
+			/* Pixels of the left column */
+			red[firstPos + iCnt] = (byte)0xff;
+			green[firstPos + iCnt] = 0;
+			blue[firstPos + iCnt] = 0;
+			
+			/* Pixels of the right column */
+			red[secondPos + iCnt] = (byte)0xff;
+			green[secondPos + iCnt] = 0;
+			blue[secondPos + iCnt] = 0;
+		}		
 	}
 	
 	/*
