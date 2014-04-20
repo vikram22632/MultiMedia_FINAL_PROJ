@@ -20,7 +20,6 @@ public class RGBVid {
 		curFrameIdx = -1;
 	}
 	
-	
 	/*
 	 * @ Responsible for reading and storing the video file from the path
 	 * given in the argument
