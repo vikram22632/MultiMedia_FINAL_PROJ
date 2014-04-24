@@ -48,6 +48,17 @@ public class RGBVid {
 		
 	}
 	
+	public BufferedImage getBegVideoFrame() {
+		curFrameIdx = 0;
+		RGBImg frame = framesList.get(curFrameIdx);
+		if(frame != null) {
+			return frame.getdisplayImage();
+		}
+		else {
+			return null;
+		}
+	}
+	
 	/*
 	 * @ Responsible for getting the next frame of the video
 	 */

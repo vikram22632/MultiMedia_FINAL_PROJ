@@ -113,6 +113,20 @@ public class MainWindow extends JFrame {
 		metaDataUIPanel.updateVideoFrames(img, cnt);
 	}
 	
+	/*
+	 * @ Responsible for controlling the video panel display (for displaying PLAY options)
+	 */
+	public void enablePlay() {
+		metaDataUIPanel.enablePlay();
+	}
+	
+	/*
+	 * @ Responsible for controlling the video panel display (for displaying PAUSE options)
+	 */
+	public void enableStop() {
+		metaDataUIPanel.enableStop();
+	}
+	
 	private JLabel statusText;
 	private QueryUIPanel queryUIPanel;
 	private MetaDataUIPanel metaDataUIPanel;

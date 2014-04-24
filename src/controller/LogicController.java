@@ -17,6 +17,9 @@ public class LogicController implements ActionListener, Runnable {
 		/* Add this class as the action listener for the window */
 		window.addActionListenerToWindow(this);
 		this.display = window;
+		
+		chldThd = new Thread(this, "parallel thread");
+		chldThd.start();
 	}
 
 	/*
@@ -24,8 +27,17 @@ public class LogicController implements ActionListener, Runnable {
 	 * since the main thread will be busy handling the events of the GUI
 	 */
 	public void run() {
-		// TODO Auto-generated method stub
+		int	cmdVal = 0;
 		
+		while(true) {
+			cmdVal = command(0);
+			if(cmdVal == PLAY) {
+				playMetaVideo();
+			} else if(cmdVal == SEARCH) {
+				/* TODO: Implement this */
+				System.out.println("Search the query image in meta data");
+			}
+		}
 	}
 
 	/*
@@ -41,7 +53,9 @@ public class LogicController implements ActionListener, Runnable {
 					/* Load the meta image */
 					metaImg = new RGBImg(MEDIA_WIDTH, MEDIA_HEIGHT, file.getName());
 					metaImg.readStandaloneImg(file.getAbsolutePath());
-
+					
+					/* Display the image on the display screen. Video controls should not show on
+					 * the screen in this case */
 					display.displayMetaImg(metaImg.getImageName(), metaImg.getdisplayImage());
 				}
 				else {
@@ -51,7 +65,7 @@ public class LogicController implements ActionListener, Runnable {
 					
 					/* Display the video on the display screen. This would mean just showing the first
 					 * frame of the video on the screen and enabling the video control buttons */
-					display.displayMetaVideoFrame(metaVideo.getVideoName(), metaVideo.getNxtVideoFrame(),
+					display.displayMetaVideoFrame(metaVideo.getVideoName(), metaVideo.getBegVideoFrame(),
 																			metaVideo.getTotalFrameCnt());
 				}
 			}
@@ -67,22 +81,72 @@ public class LogicController implements ActionListener, Runnable {
 			}
 		}
 		else if("Start Search".equals(event.getActionCommand())) {
-			/* TODO: Handle this */
-			System.out.println("Start Search");
+			/* Give command to the child thread for searching the query image in the meta image/video */
+			command(SEARCH);
 		}
 		else if("<<".equals(event.getActionCommand())) {
 			display.updateMetaVideoFrame(metaVideo.getPrevVideoFrame(), metaVideo.getFrameIdx());
 		}
 		else if("PLAY".equals(event.getActionCommand())) {
-			/* TODO: Handle this */
-			System.out.println("PLAY");
+			display.enableStop();
+			
+			/* Give the command to the child thread for playing the video */
+			command(PLAY);
 		}
-		else if("PAUSE".equals(event.getActionCommand())) {
-			/* TODO: Handle this */
-			System.out.println("PAUSE");
+		else if("STOP".equals(event.getActionCommand())) {
+			display.enablePlay();
+			display.displayMetaVideoFrame(metaVideo.getVideoName(), metaVideo.getBegVideoFrame(),
+					metaVideo.getTotalFrameCnt());
 		}
 		else if(">>".equals(event.getActionCommand())) {
 			display.updateMetaVideoFrame(metaVideo.getNxtVideoFrame(), metaVideo.getFrameIdx());
+		}
+	}
+	
+	/* 
+	 * This function is supposed to act as a synchronized communication medium between the main
+	 * thread and the child thread
+	 */
+	private synchronized int command(int cmdVal) {
+		int	rv	= 0;
+		
+		if(chldThd == Thread.currentThread()) {
+			/* Child thread's running context */
+			while(iCmd == 0) {
+				try {
+					wait();
+				} catch(Exception e) {
+					e.printStackTrace();
+				}
+			}
+			
+			rv = iCmd;
+			iCmd = 0;
+		}
+		else {
+			/* Main thread's running context */
+			iCmd = cmdVal;
+			notify();
+		}
+		return rv;
+	}
+	
+	private void playMetaVideo() {
+		int frameCnt = metaVideo.getTotalFrameCnt();
+		int	curIdx = metaVideo.getFrameIdx();
+		
+		/* Show the frames on the screen */
+		while(curIdx < (frameCnt - 1)) {
+			display.updateMetaVideoFrame(metaVideo.getNxtVideoFrame(), metaVideo.getFrameIdx());
+			/* Sleep before displaying the next screen (Adding latency to make the video frames
+			 * look like animation) */
+			try {
+				Thread.sleep(500);
+			} catch(InterruptedException e) {
+				e.printStackTrace();
+			}
+			
+			curIdx = metaVideo.getFrameIdx();
 		}
 	}
 	
@@ -91,7 +155,12 @@ public class LogicController implements ActionListener, Runnable {
 	private RGBImg		metaImg;
 	private RGBVid		metaVideo;
 	private MainWindow	display;
+	private Thread		chldThd;
+	private int			iCmd;
 	
 	private static final int MEDIA_WIDTH = 352;
 	private static final int MEDIA_HEIGHT = 288;
+	
+	private static final int PLAY	= 1;
+	private static final int SEARCH	= 2;
 }

@@ -134,6 +134,18 @@ class MetaDataUIPanel extends JPanel{
 		}
 	}
 
+	public void enableStop() {
+		playMediaBtn.setText("STOP");
+		prevFrameBtn.setEnabled(false);
+		nextFrameBtn.setEnabled(false);
+	}
+	
+	public void enablePlay() {
+		playMediaBtn.setText("PLAY");
+		prevFrameBtn.setEnabled(true);
+		nextFrameBtn.setEnabled(true);
+	}
+	
 	/*
 	 * @ This function is responsible for creating the video control panel
 	 * on the screen. The video control panel consists of PLAY/PAUSE button,
