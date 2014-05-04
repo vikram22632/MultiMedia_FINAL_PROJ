@@ -3,6 +3,7 @@ package view;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Insets;
+import java.awt.Font;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -31,7 +32,8 @@ public class MainWindow extends JFrame {
 		width = startXPos + QueryUIPanel.PANEL_WIDTH + MetaDataUIPanel.PANEL_WIDTH;
 		
 		/* Add the status text label on the window */
-		statusText = new JLabel("Load Media");
+		statusText = new JLabel("");
+		statusText.setFont(new Font("Serif", Font.BOLD, 14));
 		statusText.setHorizontalAlignment(JLabel.CENTER);
 		statusText.setVerticalAlignment(JLabel.CENTER);
 		statusText.setBounds(startXPos, startYPos, width - 5, 20);
@@ -127,10 +129,23 @@ public class MainWindow extends JFrame {
 		metaDataUIPanel.enableStop();
 	}
 	
+	/* @ Responsible for showing the program status on the main window */
+	public void showProgStatusMsg(String statusMsg) {
+		if(statusMsg.isEmpty()) {
+			statusText.setText("LOAD IMAGES and PLAY");
+		} else {
+			statusText.setText(statusMsg);
+		}
+	}
+	
 	private JLabel statusText;
 	private QueryUIPanel queryUIPanel;
 	private MetaDataUIPanel metaDataUIPanel;
 	private JFileChooser fileChooser;
 	private int width;
 	private int height;
+	
+	public static final int WIN_SUC	= 0;
+	public static final int	WIN_ERR = 1;
+	public static final int WIN_NOR	= 2;
 }

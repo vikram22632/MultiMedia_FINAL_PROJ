@@ -1,5 +1,6 @@
 package model;
 
+import java.awt.Dimension;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
@@ -106,6 +107,212 @@ public class RGBImg {
 		return this.imgName;
 	}
 	
+	/* @ get the dimension of the image */
+	public Dimension getImgDimensions() {
+		return new Dimension(width, height);
+	}
+	
+	/* Returns a scaled image, produced from the current one */
+	public RGBImg getScaledImg(float scaleVal, boolean aliasing) {
+		int		newHeight		= 0;
+		int		newWidth		= 0;
+		int		curX			= 0;
+		int		curY			= 0;
+		int		newTranslatedY	= 0;
+		int		newTranslatedX	= 0;
+		int		curTranslatedY	= 0;
+		int		curTranslatedX	= 0;
+		
+		/* Compute the height and widht of the new RGB object*/
+		newHeight = (int)(this.height * scaleVal);
+		newWidth = (int) (this.width * scaleVal);
+		
+		/* Create instance of the new RGB image */
+		RGBImg newImg = new RGBImg(newWidth, newHeight);
+		
+		/* Check which pixels to map from the current image to the new image */
+		/* Fill the color components for those pixels in the new RGB image */
+		for(int y=0; y < newHeight; y++) {
+			/* Get the translated new height coordinate */
+			newTranslatedY = y + (newHeight / 2);
+			curTranslatedY = (int) (newTranslatedY / scaleVal);
+			curY = curTranslatedY - (this.height / 2);
+			
+			if((curY < 0) || (curY >= this.height)) {
+				/* If the pixel position calculated from the new image doesnt lie in the current height range
+				 * we can ignore this whole row. */
+				continue;
+			}
+			
+			for(int x = 0; x < newWidth; x++) {
+				/* Get the translated new width coordinate */
+				newTranslatedX = x + (newWidth / 2);
+				curTranslatedX = (int) (newTranslatedX / scaleVal);
+				curX = curTranslatedX - (this.width / 2);
+				
+				if((curX < 0) || (curX >= this.width)) {
+					/* If the pixel position calculated from the new image doesnt lie in the current width range
+					 * we can ignore this pixel. */
+					continue;
+				}
+				
+				if(aliasing != true) {
+					newImg.red[x + (y * newWidth)] = this.red[curX + (curY * this.width)];
+					newImg.green[x + (y * newWidth)] = this.green[curX + (curY * this.width)];
+					newImg.blue[x + (y * newWidth)] = this.blue[curX + (curY * this.width)];
+					newImg.alpha[x + (y * newWidth)] = this.alpha[curX + (curY * this.width)];
+				}
+				else {
+					/* Apply 3X3 pre-filter for the reduction of aliasing effects in the output image */
+					newImg.red[x + (y * newWidth)] = this.apply3X3Filer(this.red, curX, curY);
+					newImg.green[x + (y * newWidth)] = this.apply3X3Filer(this.green, curX, curY);
+					newImg.blue[x + (y * newWidth)] = this.apply3X3Filer(this.blue, curX, curY);
+					newImg.alpha[x + (y * newWidth)] = this.alpha[curX + (curY * this.width)];
+				}
+			}
+		}
+
+		return newImg;
+	}
+	
+	/* @ Returns the image subsection, give a section number (from 1 to 9) */
+	public RGBImg getImgSubSection(int sectionNo) {
+		int		begX = 0;
+		int		begY = 0;
+		int		endX = 0;
+		int		endY = 0;
+		RGBImg	newImg = new RGBImg(this.width/2, this.height/2);
+		
+		switch(sectionNo) {
+		case 1:
+			begX = 0;
+			begY = 0;
+			break;
+		case 2:
+			begX = width / 2;
+			begY = 0;
+			break;
+		case 3:
+			begX = 0;
+			begY = height / 2;
+			break;
+		case 4:
+			begX = width / 2;
+			begY = height / 2;
+			break;
+		case 5:
+			begX = width / 4;
+			begY = 0;
+			break;
+		case 6:
+			begX = width / 4;
+			begY = height / 2;
+			break;
+		case 7:
+			begX = 0;
+			begY = height / 4;
+			break;
+		case 8:
+			begX = width / 2;
+			begY = height / 4;
+			break;
+		case 9:
+			begX = width / 4;
+			begY = height / 4;
+			break;
+		default:
+			return null;
+		}
+		
+		endX = begX + width / 2;
+		endY = begY + height / 2;
+		
+		/* Copy the data into the buffer of the new image */
+		int newIdx	= 0;
+		int curIdx	= 0;
+		
+		for(int y = begY; y < endY; y++) {
+			for(int x = begX; x < endX; x++) {
+				/* Find the current index in the image class data */
+				curIdx = x + (y * this.width);
+				
+				/* Copy the data into the new image */
+				newImg.red[newIdx] = this.red[curIdx];
+				newImg.green[newIdx] = this.green[curIdx];
+				newImg.blue[newIdx] = this.blue[curIdx];
+				newImg.alpha[newIdx] = this.alpha[curIdx];
+				
+				/* Point to the next pixel for the new image */
+				newIdx++;
+			}
+		}
+		
+		return newImg;
+	}
+
+	public RGBImg getColorQuantizedImg() {
+		int		totCnt	= this.width * this.height;
+		RGBImg	newImg	= new RGBImg(this.width, this.height);
+		
+		for(int i = 0; i < totCnt; i++) {
+			newImg.alpha[i] = this.alpha[i];
+			newImg.red[i] = Utils.getQuantizedByteVal(this.red[i]);
+			newImg.green[i] = Utils.getQuantizedByteVal(this.green[i]);
+			newImg.blue[i] = Utils.getQuantizedByteVal(this.blue[i]);
+		}
+		return newImg;
+	}
+	
+	/* @ Responsible for highlighting a particular section of the image, given a section number 
+	 * between 1 and 9 */
+	public void highlightImgSubSection(int sectionNo) {
+		int		begX = 0;
+		int		begY = 0;
+		
+		switch(sectionNo) {
+		case 1:
+			begX = 0;
+			begY = 0;
+			break;
+		case 2:
+			begX = width / 2;
+			begY = 0;
+			break;
+		case 3:
+			begX = 0;
+			begY = height / 2;
+			break;
+		case 4:
+			begX = width / 2;
+			begY = height / 2;
+			break;
+		case 5:
+			begX = width / 4;
+			begY = 0;
+			break;
+		case 6:
+			begX = width / 4;
+			begY = height / 2;
+			break;
+		case 7:
+			begX = 0;
+			begY = height / 4;
+			break;
+		case 8:
+			begX = width / 2;
+			begY = height / 4;
+			break;
+		case 9:
+			begX = width / 4;
+			begY = height / 4;
+			break;
+		default:
+			return;
+		}
+		
+		highlightImgPortion(begX, begY, begX + width/2 -1, begY + height/2 - 1);
+	}
+	
 	/*
 	 * @ Responsible for encircling (actually adding a rectangle) a portion of the image
 	 */
@@ -114,18 +321,14 @@ public class RGBImg {
 		int firstPos = (width * startY) + startX;
 		int secondPos = (width * endY) + startX;
 		int pixelCnt = endX - startX;
+		int pos = 0;
 		
 		/* Mark the rows */
 		for(int iCnt = 0; iCnt < pixelCnt; iCnt++) {
 			/* Pixels of the top row */
-			red[firstPos + iCnt] = (byte)0xff;
-			green[firstPos + iCnt] = 0;
-			blue[firstPos + iCnt] = 0;
-			
+			setRGBInverse(firstPos + iCnt);
 			/* Pixels of the bottom row */
-			red[secondPos + iCnt] = (byte)0xff;
-			green[secondPos + iCnt] = 0;
-			blue[secondPos + iCnt] = 0;
+			setRGBInverse(secondPos + iCnt);
 		}
 		
 		/* mark the columns */
@@ -133,15 +336,63 @@ public class RGBImg {
 		pixelCnt = (endY - startY) * width;
 		for(int iCnt = 0; iCnt < pixelCnt; iCnt+= width) {
 			/* Pixels of the left column */
-			red[firstPos + iCnt] = (byte)0xff;
-			green[firstPos + iCnt] = 0;
-			blue[firstPos + iCnt] = 0;
-			
+			setRGBInverse(firstPos + iCnt);
 			/* Pixels of the right column */
-			red[secondPos + iCnt] = (byte)0xff;
-			green[secondPos + iCnt] = 0;
-			blue[secondPos + iCnt] = 0;
+			setRGBInverse(secondPos + iCnt);
 		}		
+	}
+	
+	/* Private method to set the inverse coloring of the pixel rows */
+	private void setRGBInverse(int pos) {
+		
+		if((red[pos] <= green[pos]) && (red[pos] <= blue[pos])) {
+			red[pos] = (byte)0xFF;
+			green[pos] = 0;
+			blue[pos] = 0;
+		}
+		else if((green[pos] <= blue[pos]) && (green[pos] <= red[pos])) {
+			/* Green pixel value is already proved less than red in previous block */
+			red[pos] = 0;
+			green[pos] = (byte)0xFF;
+			blue[pos] = 0;
+		}
+		else if ((blue[pos] <= red[pos]) && (blue[pos] <= green[pos])) {
+			red[pos] = 0;
+			green[pos] = 0;
+			blue[pos] = (byte)0xFF;
+		}
+		else {
+			red[pos] = (byte)0xFF;
+			green[pos] = (byte)0xFF;
+			blue[pos] = (byte)0xFF;
+		}
+	}
+	
+	/* Private method to read color component from the input stream */
+	private byte apply3X3Filer(byte[] comp, int x, int y) {
+		int	avgVal		= 0;
+		int	iCnt		= 0;
+		int	jCnt		= 0;
+		int	iElemCnt	= 0;
+		int	newX		= 0;
+		int	newY		= 0;
+		
+		for(iCnt = -1; iCnt < 2; iCnt++) {
+			for(jCnt = -1; jCnt < 2; jCnt++) {
+				newY = y + iCnt;
+				newX = x + jCnt;
+				
+				if((newX < 0) || (newX >= this.width) || (newY < 0) || (newY >= this.height)) {
+					continue;
+				}
+				
+				avgVal += comp[newX + (newY * this.width)] & 0xff;
+				iElemCnt++;
+			}
+		}
+		
+		avgVal = (avgVal / iElemCnt) & 0xff;
+		return (byte) (avgVal);
 	}
 	
 	/*
@@ -195,7 +446,7 @@ public class RGBImg {
 	public byte red[];
 	public byte green[];
 	public byte blue[];
-	private byte alpha[];
+	public byte alpha[];
 	
 	public static final int SUCCESS = 0;
 	public static final int FAILURE = -1403;
