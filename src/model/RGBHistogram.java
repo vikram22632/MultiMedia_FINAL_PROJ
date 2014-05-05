@@ -4,8 +4,9 @@ package model;
 import java.awt.Dimension;
 
 /**
- * @author Vikram Datt Rana
- *
+ * @author Vikram Datt Rana ....
+ * Please note that this class is not being used right now.
+ * Right place to look for similar code would be the Color Histogram
  */
 public class RGBHistogram {
 	

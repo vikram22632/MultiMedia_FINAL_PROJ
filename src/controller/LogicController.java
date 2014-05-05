@@ -30,6 +30,7 @@ public class LogicController implements ActionListener, Runnable {
 	 */
 	public void run() {
 		int	cmdVal = 0;
+		int rv = 0;
 		
 		while(true) {
 			cmdVal = command(0);
@@ -43,15 +44,20 @@ public class LogicController implements ActionListener, Runnable {
 				else {
 					if(metaImg != null) {
 						/* Search the log in the image */
-						int rv = 0;
-						if(1 == (rv =searchImageInImage(queryImg, metaImg))) {
-							display.showProgStatusMsg("Logo found !!!");
-						}
-						else if(2 == rv) {
-							display.showProgStatusMsg("Logo found - THE WHOLE IMAGE!!!");
+						
+						if(0 == (rv =searchImageInImage(queryImg, metaImg))) {
+							display.showProgStatusMsg("Can't find the logo");
+							
 						}
 						else {
-							display.showProgStatusMsg("Can't find the logo");
+							if(rv == 1) {
+								display.showProgStatusMsg("Logo found !!!");
+							} else if(rv == 2) {
+								display.showProgStatusMsg("Logo found - THE WHOLE IMAGE!!!");
+							}
+							
+							/* Display the updated meta image*/
+							display.displayMetaImg(metaImg.getImageName(), metaImg.getdisplayImage());
 						}
 					} 
 					else if(metaVideo != null) {
@@ -140,57 +146,140 @@ public class LogicController implements ActionListener, Runnable {
 	private int searchImageInImage(RGBImg queryImg, RGBImg metaImg) {
 		int				rv			= 0;
 		int				section		= 0;
-		double			compVal		= 0;
+		int				order[]		= new int[9];
 		double			minVal		= 0;
+		double			dist[]		= new double[9];
 		ColorHistogram	queryHist	= new ColorHistogram();
 		ColorHistogram	metaHist	= new ColorHistogram();
 		
-		/* Check for the whole image first */
+		/* 
+		 * ---------------------------------------------------------------------
+		 * LEVEL 1: Check for the whole image first
+		 * ---------------------------------------------------------------------
+		 */
 		queryHist.calculateStats(queryImg);
 		metaHist.calculateStats(metaImg);
-		
-		compVal = metaHist.doChiSquareComp(queryHist);
-		if(compVal <= 50) {
+		if(metaHist.doChiSquareComp(queryHist) <= 50) {
 			System.out.println("The whole image matched");
 			return 2;
 		}
 		
+		/* Resetting the histograms */
 		queryHist.resetStats();
-		metaHist.resetStats();
-		
 		queryHist.calculateStats(queryImg.getScaledImg(0.25F, true));
-
-		System.out.println("--------------------------------");
-		for(int i = 1; i <= 9; i++) {
-			metaHist.calculateStats(metaImg.getImgSubSection(i));
-			/*
-			 *  Bhattachraya distance computation is not giving good results at all,
-			 *  use CHI-SQUARE comparison function for now.
-			 */
-			compVal = metaHist.doChiSquareComp(queryHist);
-				
-			System.out.println("Compval for section["+i+"]="+compVal);
-			if(i == 1) {
-				minVal = compVal;
-				section = i;
-			}
-			else if(minVal > compVal){
-				minVal = compVal;
-				section = i;
-			}
-			
-			/* Reset the meta image histogram for proper calculation of the stats for next
-			 * subsection */
+		
+		/* 
+		 * ---------------------------------------------------------------------
+		 * LEVEL 2: Check for the 9 quadrants of the image 
+		 * ---------------------------------------------------------------------
+		 */
+		for(int i = 0; i < 9; i++) {
 			metaHist.resetStats();
+			metaHist.calculateStats(metaImg.getImgSubSection(i+1));
+			/* 
+			 * Calculate the distance value 
+			 * Bhattachraya distance computation is not giving good results at all,
+			 * use CHI-SQUARE comparison function for now.
+			 */
+			dist[i] = metaHist.doChiSquareComp(queryHist);
+			order[i] = i+1;
 		}
 		
-		System.out.println("--------------------------------");
+		/* Sort the values along with quadrant indices in increasing order. This is done to consider the
+		 * quadrant with minimum distance values first, as that quadrant would have better chances of
+		 * finding a match for the logo */
+		for(int i = 0; i < dist.length; i++) {
+			for(int j = i + 1; j < dist.length; j++) {
+				if(dist[j] < dist[i]) {
+					/* Swap the entries */
+					double dTmp = dist[j];
+					dist[j] = dist[i];
+					dist[i] = dTmp;
+					/* Swap the corresponding quadrant order */
+					int iTmp = order[j];
+					order[j] = order[i];
+					order[i] = iTmp;
+				}
+			}
+		}
 		
-		metaImg.highlightImgSubSection(section);
-		display.displayMetaImg(metaImg.getImageName(), metaImg.getdisplayImage());
-		rv = 1;
+		/* For debugging */
+		System.out.println("LEVEL 2 VALUES");
+		System.out.println("-------------------------------------------------");
+		for(int i = 0; i < dist.length; i++) {
+			System.out.println("quadrant["+order[i]+"]'s value="+dist[i]);
+		}
+		System.out.println("-------------------------------------------------");
 		
-		return rv;
+		/* The quadrant with the least distance values will be the first in the array. Just check if 
+		 * it meets the valid fault tolerance or LEVEL 3 search is required */
+		if(dist[0] < 1000) {
+			/* Found the quadrant */
+			System.out.println("Found a LVL 2 match in quadrant=["+order[0]+"]");
+			metaImg.highlightImgSubSection(order[0]);
+			return 1;
+		}
+		
+		/* LEVEL 3: Further search in 9 sub-blocks of those 9 quadrants */
+		queryHist.resetStats();
+		queryHist.calculateStats(queryImg.getScaledImg(0.125F, true));
+		
+		for(int i = 0; i < 9; i++) {
+			RGBImg	quadrant = metaImg.getImgSubSection(order[i]);
+			double	subDist	= 0;
+			double	minDist = 0;
+			
+			for(int j=1; j <= 9; j++) {
+				metaHist.resetStats();
+				metaHist.calculateStats(quadrant.getImgSubSection(j));
+				
+				subDist = metaHist.doChiSquareComp(queryHist);
+				if(j == 1) {
+					minDist = subDist;
+				}
+				else if(minVal > subDist){
+					minDist = subDist;
+				}
+			}
+			/* Update the distance vector with the least distanc value found in the
+			 * 9 sub-quadrants of the quadrant of the main image */
+			dist[i] = minDist;
+		}
+		
+		/* Sort the distances vector again */
+		for(int i = 0; i < dist.length; i++) {
+			for(int j = i + 1; j < dist.length; j++) {
+				if(dist[j] < dist[i]) {
+					/* Swap the entries */
+					double dTmp = dist[j];
+					dist[j] = dist[i];
+					dist[i] = dTmp;
+					/* Swap the corresponding quadrant order */
+					int iTmp = order[j];
+					order[j] = order[i];
+					order[i] = iTmp;
+				}
+			}
+		}
+		
+		/* For debugging */
+		System.out.println("LEVEL 3 VALUES");
+		System.out.println("-------------------------------------------------");
+		for(int i = 0; i < dist.length; i++) {
+			System.out.println("quadrant["+order[i]+"]'s value="+dist[i]);
+		}
+		System.out.println("-------------------------------------------------");
+		
+		/* The quadrant with the least distance values will be the first in the array. Just check if 
+		 * it meets the valid fault tolerance or LEVEL 3 search is required */
+		if(dist[0] < 1000) {
+			/* Found the quadrant */
+			System.out.println("Found a LVL 3 match in quadrant=["+order[0]+"]");
+			metaImg.highlightImgSubSection(order[0]);
+			return 1;
+		}
+		
+		return 0;
 	}
 	
 	/* 
