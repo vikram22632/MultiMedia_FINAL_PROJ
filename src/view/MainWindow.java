@@ -132,7 +132,7 @@ public class MainWindow extends JFrame {
 	/* @ Responsible for showing the program status on the main window */
 	public void showProgStatusMsg(String statusMsg) {
 		if(statusMsg.isEmpty()) {
-			statusText.setText("LOAD IMAGES and PLAY");
+			statusText.setText("LOAD IMAGES and SEARCH");
 		} else {
 			statusText.setText(statusMsg);
 		}

@@ -42,11 +42,16 @@ public class LogicController implements ActionListener, Runnable {
 				} 
 				else {
 					if(metaImg != null) {
-						if(0 == searchImageInImage(queryImg, metaImg)) {
-							display.showProgStatusMsg("Logo found in the image");
+						/* Search the log in the image */
+						int rv = 0;
+						if(1 == (rv =searchImageInImage(queryImg, metaImg))) {
+							display.showProgStatusMsg("Logo found !!!");
+						}
+						else if(2 == rv) {
+							display.showProgStatusMsg("Logo found - THE WHOLE IMAGE!!!");
 						}
 						else {
-							display.showProgStatusMsg("Cant find logo in the image");
+							display.showProgStatusMsg("Can't find the logo");
 						}
 					} 
 					else if(metaVideo != null) {
@@ -78,7 +83,7 @@ public class LogicController implements ActionListener, Runnable {
 					/* Display the image on the display screen. Video controls should not show on
 					 * the screen in this case */
 					display.displayMetaImg(metaImg.getImageName(), metaImg.getdisplayImage());
-					
+					display.showProgStatusMsg("");
 					metaVideo = null;
 				}
 				else {
@@ -90,6 +95,7 @@ public class LogicController implements ActionListener, Runnable {
 					 * frame of the video on the screen and enabling the video control buttons */
 					display.displayMetaVideoFrame(metaVideo.getVideoName(), metaVideo.getBegVideoFrame(),
 																			metaVideo.getTotalFrameCnt());
+					display.showProgStatusMsg("");
 					metaImg = null;
 				}
 			}
@@ -102,13 +108,7 @@ public class LogicController implements ActionListener, Runnable {
 				queryImg.readStandaloneImg(file.getAbsolutePath());
 				
 				display.displayQueryImg(queryImg.getImageName(), queryImg.getdisplayImage());
-				
-				/* TODO: Remove this later */
-				/*display.displayMetaImg(queryImg.getImageName(), queryImg.getColorQuantizedImg().getdisplayImage());
-				ColorHistogram hist = new ColorHistogram();
-				hist.calculateStats(queryImg);
-				hist.printHistogram();*/
-				/* TODO: The block between these two TODO needs to be removed */
+				display.showProgStatusMsg("");
 			}
 		}
 		else if("Start Search".equals(event.getActionCommand())) {
@@ -145,14 +145,31 @@ public class LogicController implements ActionListener, Runnable {
 		ColorHistogram	queryHist	= new ColorHistogram();
 		ColorHistogram	metaHist	= new ColorHistogram();
 		
+		/* Check for the whole image first */
+		queryHist.calculateStats(queryImg);
+		metaHist.calculateStats(metaImg);
+		
+		compVal = metaHist.doChiSquareComp(queryHist);
+		if(compVal <= 50) {
+			System.out.println("The whole image matched");
+			return 2;
+		}
+		
+		queryHist.resetStats();
+		metaHist.resetStats();
+		
 		queryHist.calculateStats(queryImg.getScaledImg(0.25F, true));
 
 		System.out.println("--------------------------------");
 		for(int i = 1; i <= 9; i++) {
 			metaHist.calculateStats(metaImg.getImgSubSection(i));
-			//metaHist.printHistogram();
+			/*
+			 *  Bhattachraya distance computation is not giving good results at all,
+			 *  use CHI-SQUARE comparison function for now.
+			 */
 			compVal = metaHist.doChiSquareComp(queryHist);
-			//System.out.println("Compval for section["+i+"]="+compVal);
+				
+			System.out.println("Compval for section["+i+"]="+compVal);
 			if(i == 1) {
 				minVal = compVal;
 				section = i;
@@ -167,8 +184,11 @@ public class LogicController implements ActionListener, Runnable {
 			metaHist.resetStats();
 		}
 		
+		System.out.println("--------------------------------");
+		
 		metaImg.highlightImgSubSection(section);
 		display.displayMetaImg(metaImg.getImageName(), metaImg.getdisplayImage());
+		rv = 1;
 		
 		return rv;
 	}

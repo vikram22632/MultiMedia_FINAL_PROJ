@@ -10,6 +10,7 @@ public class ColorHistogram {
 		color = new long[125];
 		peakVal = 0;
 		peakPos = 0;
+		avgVal = 0;
 	}
 	
 	/* @ responsible for calculating the histogram statistics*/
@@ -23,12 +24,12 @@ public class ColorHistogram {
 		
 		for(int i = 0; i < totCnt; i++) {
 			//if(image.alpha[i] == 0xff) {
-				red = calcMappingVal(image.red[i]);
-				green = calcMappingVal(image.green[i]);
-				blue = calcMappingVal(image.blue[i]);
+				red = calc64MappingVal(image.red[i]);
+				green = calc64MappingVal(image.green[i]);
+				blue = calc64MappingVal(image.blue[i]);
 							
 				try {
-					/* Calculate the color index (its on a 5-nary system (like decimal or binary))*/
+					/* Calculate the color index (its on a 9-nary system (like decimal or binary))*/
 					index = red + green * 5 + blue * 25;
 					if(index > 124) {
 						throw new Exception("index val greater than 124");
@@ -49,11 +50,14 @@ public class ColorHistogram {
 				peakVal = color[i];
 				peakPos = i;
 			}
+			avgVal +=color[i];
 		}
+		
+		avgVal = avgVal / color.length;
 	}
 	
 	/*
-	 * Responsible for resetting the histogram statisitcs
+	 * @ Responsible for resetting the histogram statisitcs
 	 */
 	public void resetStats() {
 		for(int i = 0; i < color.length; i++) {
@@ -62,6 +66,7 @@ public class ColorHistogram {
 		
 		peakVal = 0;
 		peakPos = 0;
+		avgVal = 0;
 	}
 	
 	public BufferedImage getHistogramImage(int width, int height) {
@@ -83,7 +88,9 @@ public class ColorHistogram {
 	}
 	
 	
-	/* @ Does and doChiSquareComp for this histogram with other one and returns the result */
+	/* 
+	 * @ Responsible for comparing this histogram with other using the CHI SQUARE function
+	 */
 	public double doChiSquareComp(ColorHistogram otherHist) {
 		double result = 0;
 		double tempVal = 0;
@@ -112,11 +119,37 @@ public class ColorHistogram {
 		return result;
 	}
 	
+	/*
+	 * @ Responsible for comparing this histogram with other using the Bhattacharya distance function
+	 */
+	public double doBhattacharyaDistComp(ColorHistogram otherHist) {
+		double result = 0;
+		
+		try {
+			double sqrtProd = 0;
+			double avgSqrt = Math.sqrt(this.avgVal * otherHist.avgVal * Math.pow(color.length, 2));
+			
+			if(otherHist.color.length != this.color.length) {
+				throw new Exception("Range lengths do not match");
+			}
+			
+			for(int i = 0; i < color.length; i++) {
+				sqrtProd = Math.sqrt(color[i] * otherHist.color[i]);
+			}
+			
+			result = Math.sqrt(1 - (sqrtProd / avgSqrt));
+		}
+		catch(Exception e) {
+			e.printStackTrace();
+		}
+		
+		return result;
+	}	
 	
 	/* @ responsible for calculating the mmaping value to be used fr finding the index of the mapping */
-	private int calcMappingVal(byte colorVal) {
+	private int calc64MappingVal(byte colorVal) {
 		int mapVal = 0;
-		int quant = Utils.getQuantizedByteVal(colorVal) & 0xFF;
+		int quant = Utils.get64QuantizedByteVal(colorVal) & 0xFF;
 
 		/* Posible quantized values for the colors will be
 		 * 0,63,127,191,255 */
@@ -135,9 +168,33 @@ public class ColorHistogram {
 		 */
 		return mapVal;
 	}
+	
+	/* @ responsible for calculating the mmaping value to be used fr finding the index of the mapping */
+	private int calc32MappingVal(byte colorVal) {
+		int mapVal = 0;
+		int quant = Utils.get32QuantizedByteVal(colorVal) & 0xFF;
+
+		/* Posible quantized values for the colors will be
+		 * 0,63,127,191,255 */
+		mapVal = quant / 32;
+		if((mapVal != 0) || ((quant % 32) != 0)) {
+			mapVal++;
+		}
+		
+		/* 
+		 * The map should have these values now 
+		 * 0 -> 0
+		 * 63 -> 1
+		 * 127 -> 2
+		 * 191 -> 3
+		 * 255 -> 4 
+		 */
+		return mapVal;
+	}
 	 
 	/* Member variables */
 	private long	color[];
 	private long	peakVal;
 	private int		peakPos;
+	private long	avgVal;
 }

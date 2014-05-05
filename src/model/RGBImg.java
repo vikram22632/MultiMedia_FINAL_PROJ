@@ -256,9 +256,9 @@ public class RGBImg {
 		
 		for(int i = 0; i < totCnt; i++) {
 			newImg.alpha[i] = this.alpha[i];
-			newImg.red[i] = Utils.getQuantizedByteVal(this.red[i]);
-			newImg.green[i] = Utils.getQuantizedByteVal(this.green[i]);
-			newImg.blue[i] = Utils.getQuantizedByteVal(this.blue[i]);
+			newImg.red[i] = Utils.get64QuantizedByteVal(this.red[i]);
+			newImg.green[i] = Utils.get64QuantizedByteVal(this.green[i]);
+			newImg.blue[i] = Utils.get64QuantizedByteVal(this.blue[i]);
 		}
 		return newImg;
 	}
